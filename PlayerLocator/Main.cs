@@ -3,6 +3,7 @@ using ABI_RC.Core.Savior;
 using ABI_RC.Core.Util;
 using HarmonyLib;
 using MelonLoader;
+using Unity.Entities;
 using UnityEngine;
 
 
@@ -13,7 +14,7 @@ public class PlayerLocator : MelonMod {
     private static MelonPreferences_Category _melonCategory;
     internal static MelonPreferences_Entry<bool> LocateOnJoiningOthers;
     internal static MelonPreferences_Entry<float> UnfollowDistance;
-
+    private GameObject CompassNeedlePrefab;
 
 
     public override void OnInitializeMelon() {
@@ -25,7 +26,29 @@ public class PlayerLocator : MelonMod {
 
         UnfollowDistance = _melonCategory.CreateEntry("UnfollowDistance", 2f,
             description: "Stop locating the target player once you are this distance away.");
+
+        // Import asset bundle
+        try {
+
+            MelonLogger.Msg($"Loading the asset bundle...");
+            using var resourceStream = MelonAssembly.Assembly.GetManifestResourceStream("playerlocator.assetbundle");
+            using var memoryStream = new MemoryStream();
+            if (resourceStream == null) {
+                MelonLogger.Error($"Failed to load assetbundle bundle!");
+                return;
+            }
+            resourceStream.CopyTo(memoryStream);
+            var assetBundle = AssetBundle.LoadFromMemory(memoryStream.ToArray());
+
+            CompassNeedlePrefab = assetBundle.LoadAsset<GameObject>("Assets/DomNomNom/mods/PlayerLocator/CompassNeedle.prefab");
+            CompassNeedlePrefab.hideFlags |= HideFlags.DontUnloadUnusedAsset;
+
+        } catch (Exception ex) {
+            MelonLogger.Error("Failed to Load the asset bundle: " + ex.Message);
+            return;
+        }
     }
+
 
     public override void OnUpdate() {
         
@@ -45,12 +68,14 @@ public class PlayerLocator : MelonMod {
 
         List<CVRPlayerEntity> targets = CVRPlayerManager.Instance.NetworkPlayers;
 
+        // TODO: filter down to a select number of targets
+
         // Create a needle for each player to be located.
         foreach (CVRPlayerEntity target in targets) {
             string needleName = $"CompassNeedle-{target.Username}";
             Transform needleTransform = compassTransform.Find(needleName);
             if (!needleTransform) {
-                GameObject needle = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                GameObject needle = GameObject.Instantiate(CompassNeedlePrefab);
                 needle.name = needleName;
                 needleTransform = needle.transform;
                 needleTransform.parent = compassTransform;
@@ -59,33 +84,7 @@ public class PlayerLocator : MelonMod {
             needleTransform.LookAt(target.PlayerObject.transform);
         }
 
-        // Cleanup compass needles that are no longer wanted.
-
-        //
-        //_visualizer.name = "[TheClapper] Visualizer";
-        //_visualizer.layer = LayerMask.NameToLayer("UI Internal");
-        //_visualizer.transform.position = transform.position;
-        //_visualizer.transform.rotation = transform.rotation;
-        //_visualizer.transform.localScale = Vector3.one * MinimumDistance * 2;
-
-        //_visualizer.transform.SetParent(transform, true);
-
-        //PlayerSetup
-
-        //PlayerSetup.Instance.eyeMovement.isLocal;
-        //PlayerSetup.Instance._avatarDescriptor != null 
-        //!string.IsNullOrEmpty(MetaPort.Instance.currentAvatarGuid) && avatarId == MetaPort.Instance.currentAvatarGuid
-
-        /*
-        foreach (CVRPlayerEntity player in CVRPlayerManager.Instance.NetworkPlayers)        {
-            if (player.Username == MetaPort.Instance.username) {
-                MelonLogger.Msg($"found self: {player.Username}");
-            }
-            else {
-                MelonLogger.Msg($"found other: {player.Username}");
-            }
-        }
-        */
+        // TODO: Cleanup compass needles that are no longer wanted.
     }
 
     [HarmonyPatch]

@@ -1,2 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+    <ItemGroup>
+        <EmbeddedResource Include="Resources\playerlocator.assetbundle">
+            <LogicalName>playerlocator.assetbundle</LogicalName>
+        </EmbeddedResource>
+    </ItemGroup>
 </Project>
