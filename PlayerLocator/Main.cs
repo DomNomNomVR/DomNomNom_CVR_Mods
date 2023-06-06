@@ -113,8 +113,8 @@ public class PlayerLocator : MelonMod {
         look.SetSource(0, sauce);
     }
 
-    public override void OnUpdate() {
 
+    public override void OnUpdate() {
         if (!PlayerSetup.Instance) return;
         var avi = PlayerSetup.Instance._avatar;
         if (!avi) return;
